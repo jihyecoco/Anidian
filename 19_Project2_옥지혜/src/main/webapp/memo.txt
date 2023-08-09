@@ -1,0 +1,202 @@
+/************************
+작성자 : 옥지혜
+■리뷰
+-- 할 수 있는 것보다 하고 싶은 것이 많아 추리는 데에도 꽤나 시간이 걸렸음(DB 등)
+-- 에러발생 및 중도에 페이지 내 디테일 변경으로 시간내에 다 완성하지못함
+-- 초반에 부트스트랩 등 화면요소에 시간을 많이 소요해 결정적인 기능부분에 시간이 부족해짐,,
+-- INNER JOIN(abandAni테이블 관리에 결함있다고 생각하여 abandAniDetails의 칼럼을 abandAni로 흡수시켜 inner join부분이 대체되었고, 시간 내에 join할만한 요소를 찾지못함)
+SELECT ani.no, bgnde, ani.state, upkind, happenPlace, happenPlace_sub, kindCd, colorCd, sexCd, neuter_yn, specialMark,ani_image, care_reg_no
+FROM abandAni ani INNER JOIN abandAniDetails details
+ON ani.no = details.no
+where ani.state ='protect' or ani.state ='notice' or ani.state = 'check'
+order by no;
+
+■시작페이지
+webapp/resources/main.jsp
+************************/
+
+
+-- 회원 테이블 생성
+drop sequence userseq ;
+
+create sequence userseq 
+increment by 1
+start with 1
+minvalue 0
+maxvalue 1000
+nocache;
+
+drop table users cascade constraints purge ;
+
+create table users (
+	userNo number not null,
+	userName varchar2(20) not null,
+	userId varchar2(15) primary key,
+	userPw varchar2(15) not null,
+	email varchar2(40),
+	phoneNum varchar2(12),
+	address varchar2(35),
+	address_sub varchar2(20)
+);
+
+
+insert into users 
+values(userseq .nextval, 'admin', 'admin', '123123','admin123@naver.com','01012345678','경기 성남시 분당구 불정로 6','네이버 그린팩토리') ;
+
+insert into users 
+values(userseq .nextval, '김연아', 'yunaKim', '12345','yunaKim@gmail.com,'01011112222','서울 용산구 독서당로 111','401동') ;
+
+col usersname for a7;
+col email for a15;
+col address for a10;
+select * from users;
+
+-- 유기동물 보호소 / abandAniShelter
+
+drop sequence shelseq ;
+
+create sequence shelseq 
+increment by 1
+start with 1
+minvalue 0
+maxvalue 1000
+nocache;
+
+drop table abandAniShelter cascade constraints purge ;
+
+create table abandAniShelter (
+	care_reg_no number primary key, --보호소번호
+	careNm varchar2(20) not null, --보호소이름
+	careTel varchar2(20) not null, --보호소전화번호
+	careAddr varchar2(50) --보호장소
+);
+
+insert into abandAniShelter 
+values(shelseq .nextval, '강북동물병원', '02-985-7525', '서울특별시 강북구 번동 309번지 덕수빌딩1층') ;
+
+insert into abandAniShelter 
+values(shelseq .nextval, '보노보노동물병원', '02-903-5525', '서울특별시 강북구 수유동 119번지 7호') ;
+
+select * from abandAniShelter;
+
+-- 유기동물 테이블 / abandoned animal ⇒ abandAni
+
+drop sequence aniseq ;
+
+create sequence aniseq 
+increment by 1
+start with 1
+minvalue 0
+maxvalue 10000
+nocache;
+
+drop table abandAni cascade constraints purge ;
+
+--userId varchar2(15) primary key,--신고자
+create table abandAni (
+	no number primary key, --일련번호
+	bgnde date not null, --유기날짜(검색 시작일)
+	state varchar2(7) CHECK(state IN ('protect', 'notice', 'adopt', 'guardian', 'check')), --상태
+	upkind varchar2(6), --축종코드
+	happenPlace varchar(40) not null,--발견장소(우편번호 검색 시 나오는 주소)
+	happenPlace_sub varchar(20) not null,--발견장소(상세주소)
+	kindCd varchar(20), --품종
+	colorCd varchar(20), --색상
+	sexCd char(1),--성별
+	neuter_yn varchar2(1), --중성화여부
+	specialMark varchar(100), --특징
+	ani_image varchar2(15), -- 이미지
+	care_reg_no number, --보호소번호
+	CONSTRAINT fk_care foreign key(care_reg_no) references abandAniShelter(care_reg_no)  --외래키 지정문
+);
+
+insert into abandAni
+values(aniseq.nextval, sysdate, 'protect', '422400', '서울 강북구 삼양로 595', '솔밭공원 앞', '코숏', '삼색', 'F','U', '애교가많음', '3color.jpg',1) ;
+
+insert into abandAni(no, bgnde, state, upkind, happenPlace, happenPlace_sub, kindCd, colorCd, sexCd, neuter_yn, specialMark, ani_image)
+values(aniseq.nextval, sysdate, 'check', '422400', '서울 강북구 삼양로 595', '솔밭공원 앞', '코숏', '삼색', 'F','U', '별이 다섯개', '3color.jpg') ;
+select * from abandAni;
+
+insert into abandAni(no, bgnde, state, upkind, happenPlace, happenPlace_sub, kindCd, colorCd, sexCd, neuter_yn, specialMark, ani_image)
+values(aniseq.nextval, sysdate, 'check', '422400', '서울 강북구 삼양로 595', '솔밭공원 앞', '코숏', '삼색', 'F','U', '별이 다섯개', '3color.jpg') ;
+
+insert into abandAni(no, bgnde, state, upkind, happenPlace, happenPlace_sub, kindCd, colorCd, sexCd, neuter_yn, specialMark, ani_image)
+values(aniseq.nextval, sysdate, 'protect', '429900', '서울 강북구 삼양로 595', '솔밭공원 앞', '거북이', '초록색', 'F','U', '꼬북꼬북', '3color.jpg') ;
+
+
+--유기동물 보호자되기
+drop sequence guardseq ;
+
+create sequence guardseq 
+increment by 1
+start with 1
+minvalue 0
+maxvalue 10000
+nocache;
+
+drop table guardian cascade constraints purge ;
+
+create table guardian(
+	guardNo number,
+	no number, --유기동물 일련번호
+	userId varchar2(15),
+	userPw varchar2(15) not null,
+	gender char(4) CHECK(gender IN ('남자', '여자')), --성별
+	reason varchar(100), --신청사유
+	CONSTRAINT fk_no foreign key(no) references abandAni(no),  --외래키 지정문
+	CONSTRAINT fk_userId foreign key(userId) references users(userId) --외래키 지정문
+);
+
+
+insert into guardian values(guardseq.nextval, 'lee123', '123123','여자', '좋아서');
+
+select * from guardian;
+
+
+commit;
+
+
+--CONSTRAINT fk_kind foreign key(care_reg_no) references abandAniShelter(care_reg_no)  --외래키 지정문
+--게시판 테이블
+
+drop sequence board_seq;
+create sequence board_seq
+  increment by 1
+  start with 1
+  minvalue 1
+  maxvalue 10000
+  nocache;
+  
+drop table board_ani;
+
+create table board_ani( 
+	board_no number not null primary key,
+	userId varchar2(15) not null,
+	userPw varchar2(15) not null,
+	subject varchar2(20) not null,
+	reg_date date not null,
+	readcount int default 0,
+	ref number not null,
+	step number not null,
+	depth number not null,
+	content varchar2(50) not null,
+	CONSTRAINT fk_user foreign key(userId) references users(userId) --외래키 지정문
+);
+
+
+
+--인기글
+select  subject, readcount
+from (select rownum as rank, board_no, subject, readcount
+from (select board_no, subject, readcount
+from board_ani  
+order by readcount desc )) 
+where rank between 1 and 5 
+order by readcount desc;
+
+commit;
+
+
+
+
+
